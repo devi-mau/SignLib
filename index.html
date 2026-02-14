@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SignLib — Sign Language Video Library</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════════════════════════════
+       SIDEBAR
+  ══════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>SignLib</h1>
+      <span>Video Library</span>
+    </div>
+
+    <div class="sidebar-section">Browse</div>
+    <div class="nav-item active" onclick="filterCategory('all')" id="nav-all">
+      <span class="nav-icon">▦</span> All Videos
+      <span class="count" id="count-all">0</span>
+    </div>
+    <div class="nav-item" onclick="filterCategory('favorites')" id="nav-favorites">
+      <span class="nav-icon">♥</span> Favorites
+      <span class="count" id="count-favorites">0</span>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:8px">Categories</div>
+    <div id="cat-nav"></div>
+
+    <div class="folder-banner" id="folder-banner">
+      <strong>📁 Folder linked</strong>
+      <span id="folder-banner-name" style="color:var(--text-muted);font-size:0.73rem"></span>
+    </div>
+
+    <div style="flex:1"></div>
+
+    <div class="sidebar-actions">
+      <button class="btn-sidebar primary" onclick="openAddModal()">＋ Add Video(s)</button>
+      <button class="btn-sidebar folder"  onclick="openFolderModal()">📁 Link Folder</button>
+      <button class="btn-sidebar clear"   onclick="confirmClearAll()">🗑 Clear All Videos</button>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════ -->
+  <main class="main">
+    <div class="topbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search signs, keywords, tags…" oninput="handleSearch()"/>
+      </div>
+      <div class="topbar-controls">
+        <select class="sort-select" onchange="handleSort(this.value)">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="az">A → Z</option>
+          <option value="za">Z → A</option>
+        </select>
+        <div class="view-toggle">
+          <button class="active" id="grid-btn" onclick="setView('grid')" title="Grid view">⊞</button>
+          <button id="list-btn" onclick="setView('list')" title="List view">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <div class="page-header">
+        <div class="page-title" id="page-title">All Videos</div>
+        <div class="result-count" id="result-count"></div>
+      </div>
+      <div class="video-grid" id="video-grid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════════════════════════════
+     ADD VIDEO(S) MODAL
+══════════════════════════════════ -->
+<div class="modal-backdrop" id="add-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeAddModal()">✕</button>
+    <h2>Add Video(s)</h2>
+    <p class="modal-subtitle">Upload one video with custom details, or import many files at once.</p>
+
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('single')">Single Upload</button>
+      <button class="modal-tab" onclick="switchTab('bulk')">Bulk Upload</button>
+    </div>
+
+    <!-- Single Upload Tab -->
+    <div class="tab-pane active" id="tab-single">
+      <div class="form-group">
+        <label>Video File</label>
+        <div class="file-drop" id="drop-single">
+          <input type="file" id="single-file" accept="video/*" onchange="onSingleFile(event)"/>
+          <div class="file-icon">🎬</div>
+          <p>Click or drag &amp; drop a video file</p>
+          <p class="filename" id="single-name"></p>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sign / Title</label>
+          <input type="text" id="s-title" placeholder="e.g. Hello"/>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="s-cat">
+            <option value="">-- Select --</option>
+            <option>Greetings</option>
+            <option>Numbers</option>
+            <option>Alphabet</option>
+            <option>Emotions</option>
+            <option>Family</option>
+            <option>Food &amp; Drink</option>
+            <option>Colors</option>
+            <option>Questions</option>
+            <option>Actions</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Tags <span style="font-size:0.72rem;color:var(--text-muted);text-transform:none;letter-spacing:0">(comma-separated)</span></label>
+        <input type="text" id="s-tags" placeholder="e.g. basic, beginner, ASL"/>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveSingle()">Save Video</button>
+      </div>
+    </div>
+
+    <!-- Bulk Upload Tab -->
+    <div class="tab-pane" id="tab-bulk">
+      <div class="info-box">
+        <strong>Bulk import:</strong> Select multiple videos at once. SignLib auto-detects titles from
+        filenames and guesses categories. You can review before importing.
+      </div>
+      <div class="form-group">
+        <label>Video Files</label>
+        <div class="file-drop" id="drop-bulk">
+          <input type="file" id="bulk-files" accept="video/*" multiple onchange="onBulkFiles(event)"/>
+          <div class="file-icon">🗂️</div>
+          <p>Click or drag &amp; drop <strong>multiple</strong> video files</p>
+          <p class="filename" id="bulk-name"></p>
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label>Default Category</label>
+          <select id="b-cat">
+            <option value="">Auto-detect</option>
+            <option>Greetings</option>
+            <option>Numbers</option>
+            <option>Alphabet</option>
+            <option>Emotions</option>
+            <option>Family</option>
+            <option>Food &amp; Drink</option>
+            <option>Colors</option>
+            <option>Questions</option>
+            <option>Actions</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label>Default Tags</label>
+          <input type="text" id="b-tags" placeholder="e.g. ASL, beginner"/>
+        </div>
+      </div>
+      <div id="bulk-preview-wrap" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span id="bulk-preview-label" style="font-size:0.77rem;color:var(--text-muted)"></span>
+          <button class="btn btn-ghost" style="padding:4px 11px;font-size:0.73rem" onclick="clearBulk()">Clear</button>
+        </div>
+        <div class="preview-list" id="bulk-preview"></div>
+      </div>
+      <div id="bulk-progress" class="bulk-progress" style="display:none">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="prog-bar" style="width:0"></div>
+        </div>
+        <div class="progress-text" id="prog-text">Processing…</div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
+        <button class="btn btn-primary" id="bulk-save-btn" disabled onclick="saveBulk()">Import All</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     LINK FOLDER MODAL
+══════════════════════════════════ -->
+<div class="modal-backdrop" id="folder-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeFolderModal()">✕</button>
+    <h2>Link Local Folder</h2>
+    <p class="modal-subtitle">Point SignLib to your videos folder — files stream directly from disk.</p>
+    <div class="info-box warn">
+      <strong>⚠️ Browser note:</strong> Browsers can't permanently store folder access for security
+      reasons. You'll need to re-select the folder each time you open SignLib. All titles, categories,
+      and favorites are always saved automatically.
+    </div>
+    <div class="form-group">
+      <label>Select Folder</label>
+      <div class="folder-drop" id="drop-folder">
+        <input type="file" id="folder-input" webkitdirectory multiple accept="video/*" onchange="onFolderSelect(event)"/>
+        <div class="file-icon">📁</div>
+        <p>Click to choose your video folder</p>
+        <p class="folder-name" id="folder-chosen"></p>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Default Category</label>
+        <select id="f-cat">
+          <option value="">Auto-detect</option>
+          <option>Greetings</option>
+          <option>Numbers</option>
+          <option>Alphabet</option>
+          <option>Emotions</option>
+          <option>Family</option>
+          <option>Food &amp; Drink</option>
+          <option>Colors</option>
+          <option>Questions</option>
+          <option>Actions</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Default Tags</label>
+        <input type="text" id="f-tags" placeholder="e.g. ASL, beginner"/>
+      </div>
+    </div>
+    <div id="folder-preview-wrap" style="display:none">
+      <div style="margin-bottom:6px">
+        <span id="folder-preview-label" style="font-size:0.77rem;color:var(--text-muted)"></span>
+      </div>
+      <div class="preview-list" id="folder-preview"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeFolderModal()">Cancel</button>
+      <button class="btn btn-warn" id="folder-link-btn" disabled onclick="linkFolder()">Link Folder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     PLAYER MODAL
+══════════════════════════════════ -->
+<div class="modal-backdrop" id="player-modal">
+  <div class="modal player-modal">
+    <div class="player-header">
+      <div>
+        <h2 id="player-title"></h2>
+        <span class="card-category" id="player-cat" style="display:inline-block;margin-top:4px"></span>
+      </div>
+      <button class="modal-close" onclick="closePlayer()" style="position:static;flex-shrink:0">✕</button>
+    </div>
+    <div class="player-video-wrap">
+      <video id="player-video" controls playsinline></video>
+    </div>
+    <div class="player-info">
+      <div class="player-tags" id="player-tags"></div>
+      <div class="player-actions">
+        <button class="player-fav-btn" id="player-fav-btn" onclick="toggleFavPlayer()">
+          <span id="pfav-icon">♡</span>
+          <span id="pfav-text">Add to Favorites</span>
+        </button>
+        <button class="player-delete-btn" onclick="confirmDeletePlaying()">🗑 Remove</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     CONFIRM DIALOG
+══════════════════════════════════ -->
+<div class="confirm-backdrop" id="confirm-backdrop">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">🗑</div>
+    <h3 id="confirm-title">Remove Video?</h3>
+    <p id="confirm-msg">This will remove the video from SignLib. The original file on your device won't be affected.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost"   onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger"  id="confirm-ok-btn" onclick="confirmOk()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div class="toast-container" id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
