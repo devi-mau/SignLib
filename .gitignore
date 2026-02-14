@@ -1,0 +1,35 @@
+# --- SignLib Video Storage ---
+# We keep the folder but ignore the actual video files
+# to prevent bloating the GitHub repository.
+uploads/*
+!uploads/.gitkeep
+videos/
+*.mp4
+*.mov
+*.m4v
+*.webm
+
+# --- Dependencies ---
+node_modules/
+jspm_packages/
+
+# --- Environment & Secrets ---
+.env
+.env.local
+
+# --- Build Outputs ---
+dist/
+build/
+.next/
+out/
+
+# --- Database (Local) ---
+*.db
+*.sqlite
+*.sqlite3
+
+# --- OS & IDE Files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
